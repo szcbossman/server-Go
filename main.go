@@ -28,11 +28,44 @@ const (
 	//PROJECT_ID = "around-xxx"
 	//BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL = "http://YOUR_ES_IP_ADDRESS:9200"
+	ES_URL = "http://35.199.186.113:9200"
 )
 
 
 func main() {
+	// Create a client
+	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
+	if err != nil {
+		panic(err)
+		return
+	}
+
+	// Use the IndexExists service to check if a specified index exists.
+	exists, err := client.IndexExists(INDEX).Do()
+	if err != nil {
+		panic(err)
+	}
+	if !exists {
+		// Create a new index.
+		mapping := `{
+                    "mappings":{
+                           "post":{
+                                  "properties":{
+                                         "location":{
+                                                "type":"geo_point"
+                                         }
+                                  }
+                           }
+                    }
+             }
+             `
+		_, err := client.CreateIndex(INDEX).Body(mapping).Do()
+		if err != nil {
+			// Handle error
+			panic(err)
+		}
+	}
+
 	fmt.Println("started-service")
 	http.HandleFunc("/post", handlerPost)
 	http.HandleFunc("/search", handlerSearch)
