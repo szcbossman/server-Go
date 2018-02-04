@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"reflect"
 	elastic "gopkg.in/olivere/elastic.v3"
+	"github.com/pborman/uuid"
 )
 
 type Location struct {
@@ -25,7 +26,7 @@ const (
 	INDEX = "around"
 	TYPE = "post"
 	DISTANCE = "200km"
-	//PROJECT_ID = "around-xxx"
+	//PROJECT_ID = "around-around"
 	//BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
 	ES_URL = "http://35.199.186.113:9200"
@@ -83,9 +84,38 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 		return
 	}
+	id := uuid.New()
+	// Save to ES.
+	saveToES(&p, id)
 
 	fmt.Fprintf(w, "Post received: %s\n", p.Message)
 }
+
+// Save a post to ElasticSearch
+func saveToES(p *Post, id string) {
+	// Create a client
+	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
+	if err != nil {
+		panic(err)
+		return
+	}
+
+	// Save it to index
+	_, err = es_client.Index().
+		Index(INDEX).
+		Type(TYPE).
+		Id(id).
+		BodyJson(p).
+		Refresh(true).
+		Do()
+	if err != nil {
+		panic(err)
+		return
+	}
+
+	fmt.Printf("Post is saved to Index: %s\n", p.Message)
+}
+
 
 
 func handlerSearch(w http.ResponseWriter, r *http.Request) {
