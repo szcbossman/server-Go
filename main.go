@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
+	"reflect"
+	elastic "gopkg.in/olivere/elastic.v3"
 )
 
 type Location struct {
@@ -20,8 +22,15 @@ type Post struct {
 }
 
 const (
+	INDEX = "around"
+	TYPE = "post"
 	DISTANCE = "200km"
+	//PROJECT_ID = "around-xxx"
+	//BT_INSTANCE = "around-post"
+	// Needs to update this URL if you deploy it to cloud.
+	ES_URL = "http://YOUR_ES_IP_ADDRESS:9200"
 )
+
 
 func main() {
 	fmt.Println("started-service")
@@ -59,19 +68,56 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("Search received: %s %s %s", lat, lon, ran)
-	p := &Post{
-		User:"1234",
-		Message:"msg",
-		Location: Location {
-			Lat: lt,
-			Lon: ln,
-		},
-	}
-	js, err := json.Marshal(p)
+
+	// Create a client
+	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		panic(err)
 		return
 	}
+
+	// Define geo distance query as specified in
+	// https://www.elastic.co/guide/en/elasticsearch/reference/5.2/query-dsl-geo-distance-query.html
+	q := elastic.NewGeoDistanceQuery("location")
+	q = q.Distance(ran).Lat(lat).Lon(lon)
+
+	// Some delay may range from seconds to minutes. So if you don't get enough results. Try it later.
+	searchResult, err := client.Search().
+		Index(INDEX).
+		Query(q).
+		Pretty(true).
+		Do()
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+
+	// searchResult is of type SearchResult and returns hits, suggestions,
+	// and all kinds of other information from Elasticsearch.
+	fmt.Printf("Query took %d milliseconds\n", searchResult.TookInMillis)
+	// TotalHits is another convenience function that works even when something goes wrong.
+	fmt.Printf("Found a total of %d post\n", searchResult.TotalHits())
+
+	// Each is a convenience function that iterates over hits in a search result.
+	// It makes sure you don't need to check for nil values in the response.
+	// However, it ignores errors in serialization.
+	var typ Post
+	var ps []Post
+	for _, item := range searchResult.Each(reflect.TypeOf(typ)) { // instance of
+		p := item.(Post) // p = (Post) item
+		fmt.Printf("Post by %s: %s at lat %v and lon %v\n", p.User, p.Message, p.Location.Lat, p.Location.Lon)
+		// TODO(student homework): Perform filtering based on keywords such as web spam etc.
+		ps = append(ps, p)
+
+	}
+	js, err := json.Marshal(ps)
+	if err != nil {
+		panic(err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(js)
+
 }
