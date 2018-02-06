@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"gopkg.in/olivere/elastic.v3"
 	"github.com/pborman/uuid"
+	"strings"
 )
 
 type Location struct {
@@ -167,16 +168,12 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 		p := item.(Post) // p = (Post) item
 		fmt.Printf("Post by %s: %s at lat %v and lon %v\n", p.User, p.Message, p.Location.Lat, p.Location.Lon)
 		// TODO: Perform filtering based on keywords such as web spam etc.
-		dict := map[string]int {
-			"taboo_english" : 0,
-			"taboo_chinese" : 1,
-			"taboo_spanish" : 2,
-		}
-		if _, isKeywords := dict[p.Message]; isKeywords {
-			fmt.Println("keywords detected, not gonna add this post")
-		} else {
+		if !containsFilteredWords(&p.Message) {
 			ps = append(ps, p)
+		} else {
+			fmt.Println("offensive keywords matched, post filtered")
 		}
+
 	}
 	js, err := json.Marshal(ps)
 	if err != nil {
@@ -189,3 +186,17 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 
 }
+
+func containsFilteredWords(s *string) bool {
+	filteredWords := []string{
+		"fuck",
+		"100",
+	}
+	for _, word := range filteredWords {
+		if strings.Contains(*s, word) {
+			return true
+		}
+	}
+	return false
+}
+
