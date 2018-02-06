@@ -28,7 +28,7 @@ const (
 	DISTANCE = "200km"
 	//PROJECT_ID = "around-around"
 	//BT_INSTANCE = "around-post"
-	ES_URL = "http://35.199.186.113:9200"
+	ES_URL = "http://35.227.175.188 :9200"
 )
 
 
