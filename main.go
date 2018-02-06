@@ -7,7 +7,7 @@ import (
 	"log"
 	"strconv"
 	"reflect"
-	elastic "gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v3"
 	"github.com/pborman/uuid"
 )
 
@@ -28,7 +28,6 @@ const (
 	DISTANCE = "200km"
 	//PROJECT_ID = "around-around"
 	//BT_INSTANCE = "around-post"
-	// Needs to update this URL if you deploy it to cloud.
 	ES_URL = "http://35.199.186.113:9200"
 )
 
@@ -168,8 +167,16 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 		p := item.(Post) // p = (Post) item
 		fmt.Printf("Post by %s: %s at lat %v and lon %v\n", p.User, p.Message, p.Location.Lat, p.Location.Lon)
 		// TODO: Perform filtering based on keywords such as web spam etc.
-		ps = append(ps, p)
-
+		dict := map[string]int {
+			"taboo_english" : 0,
+			"taboo_chinese" : 1,
+			"taboo_spanish" : 2,
+		}
+		if _, isKeywords := dict[p.Message]; isKeywords {
+			fmt.Println("keywords detected, not gonna add this post")
+		} else {
+			ps = append(ps, p)
+		}
 	}
 	js, err := json.Marshal(ps)
 	if err != nil {
