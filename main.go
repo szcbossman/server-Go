@@ -92,10 +92,6 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	saveToBT(&p, id)
 
 	fmt.Fprintf(w, "Post received: %s\n", p.Message)
-
-
-
-
 }
 
 // Save a post to BigTable
