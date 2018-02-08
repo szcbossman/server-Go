@@ -31,7 +31,7 @@ const (
 	DISTANCE = "200km"
 	PROJECT_ID = "around-194221"
 	BT_INSTANCE = "around-post"
-	ES_URL = "http://35.227.175.188:9200"
+	ES_URL = "http://104.198.103.77:9200"
 )
 
 
@@ -92,7 +92,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "Post received: %s\n", p.Message)
 
-
+	//code for BigTable implementation
 	ctx := context.Background()
 	// you must update project name here
 	bt_client, err := bigtable.NewClient(ctx, PROJECT_ID, BT_INSTANCE)
