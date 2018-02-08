@@ -89,10 +89,17 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	id := uuid.New()
 	// Save to ES.
 	saveToES(&p, id)
+	saveToBT(&p, id)
 
 	fmt.Fprintf(w, "Post received: %s\n", p.Message)
 
-	//code for BigTable implementation
+
+
+
+}
+
+// Save a post to BigTable
+func saveToBT(p *Post, id string) {
 	ctx := context.Background()
 	// you must update project name here
 	bt_client, err := bigtable.NewClient(ctx, PROJECT_ID, BT_INSTANCE)
@@ -115,8 +122,6 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
-
-
 }
 
 // Save a post to ElasticSearch
