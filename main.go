@@ -91,9 +91,38 @@ func main() {
 
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(":8080", nil))
-
-
 }
+
+// If signup is successful, a new session is created.
+func signupHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Received one signup request")
+
+	decoder := json.NewDecoder(r.Body)
+	var u User
+	if err := decoder.Decode(&u); err != nil {
+		panic(err)
+		return
+	}
+
+	if u.Username != "" && u.Password != "" {
+		if addUser(u.Username, u.Password) {
+			fmt.Println("User added successfully.")
+			w.Write([]byte("User added successfully."))
+		} else {
+			fmt.Println("Failed to add a new user.")
+			http.Error(w, "Failed to add a new user", http.StatusInternalServerError)
+		}
+	} else {
+		fmt.Println("Empty password or username.")
+		http.Error(w, "Empty password or username", http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+
+
 
 
 func handlerPost(w http.ResponseWriter, r *http.Request) {

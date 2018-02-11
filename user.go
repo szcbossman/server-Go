@@ -20,6 +20,7 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
 // checkUser checks whether user is valid
 func checkUser(username, password string) bool {
 	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
@@ -48,6 +49,7 @@ func checkUser(username, password string) bool {
 	// If no user exist, return false.
 	return false
 }
+
 // add user adds a new user
 func addUser(username, password string) bool {
 	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
@@ -77,7 +79,6 @@ func addUser(username, password string) bool {
 		fmt.Printf("User %s has existed, cannot create duplicate user.\n", username)
 		return false
 	}
-
 	// Save it to index
 	_, err = es_client.Index().
 		Index(INDEX).
