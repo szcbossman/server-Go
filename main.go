@@ -15,6 +15,7 @@ import (
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	"time"
 )
 
 type Location struct {
@@ -121,6 +122,37 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 }
 
+// If login is successful, a new token is created.
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Received one login request")
+
+	decoder := json.NewDecoder(r.Body)
+	var u User
+	if err := decoder.Decode(&u); err != nil {
+		panic(err)
+		return
+	}
+
+	if checkUser(u.Username, u.Password) {
+		token := jwt.New(jwt.SigningMethodHS256)
+		claims := token.Claims.(jwt.MapClaims)
+		/* Set token claims */
+		claims["username"] = u.Username
+		claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+
+		/* Sign the token with our secret */
+		tokenString, _ := token.SignedString(mySigningKey)
+
+		/* Finally, write the token to the browser window (to react frontend/iOS frontend)*/
+		w.Write([]byte(tokenString))
+	} else {
+		fmt.Println("Invalid password or username.")
+		http.Error(w, "Invalid password or username", http.StatusForbidden)
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+}
 
 
 
