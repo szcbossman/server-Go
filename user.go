@@ -21,4 +21,34 @@ type User struct {
 	Password string `json:"password"`
 }
 // checkUser checks whether user is valid
+func checkUser(username, password string) bool {
+	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
+	if err != nil {
+		fmt.Printf("ES is not setup %v\n", err)
+		return false
+	}
 
+	// Search with a term query, select * from user where username = “jack”
+	termQuery := elastic.NewTermQuery("username", username)
+	queryResult, err := es_client.Search().
+		Index(INDEX).
+		Query(termQuery).
+		Pretty(true).
+		Do()
+	if err != nil {
+		fmt.Printf("ES query failed %v\n", err)
+		return false
+	}
+
+	var tyu User
+	for _, item := range queryResult.Each(reflect.TypeOf(tyu)) {
+		u := item.(User)
+		return u.Password == password && u.Username == username
+	}
+	// If no user exist, return false.
+	return false
+}
+// add user adds a new user
+func addUser(username, password string) bool {
+
+}
