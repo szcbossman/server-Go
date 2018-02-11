@@ -1,7 +1,7 @@
 package main
 
 import (
-	elastic "gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v3"
 
 	"encoding/json"
 	"fmt"
@@ -50,5 +50,46 @@ func checkUser(username, password string) bool {
 }
 // add user adds a new user
 func addUser(username, password string) bool {
+	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
+	if err != nil {
+		fmt.Printf("ES is not setup %v\n", err)
+		return false
+	}
 
+	user := &User{
+		Username: username,
+		Password: password,
+	}
+
+	// Search with a term query
+	termQuery := elastic.NewTermQuery("username", username)
+	queryResult, err := es_client.Search().
+		Index(INDEX).
+		Query(termQuery).
+		Pretty(true).
+		Do()
+	if err != nil {
+		fmt.Printf("ES query failed %v\n", err)
+		return false
+	}
+
+	if queryResult.TotalHits() > 0 {
+		fmt.Printf("User %s has existed, cannot create duplicate user.\n", username)
+		return false
+	}
+
+	// Save it to index
+	_, err = es_client.Index().
+		Index(INDEX).
+		Type(TYPE_USER).
+		Id(username).
+		BodyJson(user).
+		Refresh(true).
+		Do()
+	if err != nil {
+		fmt.Printf("ES save failed %v\n", err)
+		return false
+	}
+	return true
 }
+
