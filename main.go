@@ -155,10 +155,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
-
 func handlerPost(w http.ResponseWriter, r *http.Request) {
 	// Parse from body of request to get a json object.
+	user := r.Context().Value("user")
+	claims := user.(*jwt.Token).Claims
+	username := claims.(jwt.MapClaims)["username"]
+
 	fmt.Println("Received one post request")
 	decoder := json.NewDecoder(r.Body)
 	var p Post
@@ -166,6 +168,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 		return
 	}
+	p.User = username.(string)
 	id := uuid.New()
 	// Save to ES.
 	saveToES(&p, id)
